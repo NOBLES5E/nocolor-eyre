@@ -21,28 +21,6 @@ impl fmt::Display for InstallError {
 
 impl std::error::Error for InstallError {}
 
-#[derive(Debug)]
-struct InstallThemeError;
-
-impl fmt::Display for InstallThemeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("could not set the provided `Theme` globally as another was already set")
-    }
-}
-
-impl std::error::Error for InstallThemeError {}
-
-#[derive(Debug)]
-struct InstallColorSpantraceThemeError;
-
-impl fmt::Display for InstallColorSpantraceThemeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("could not set the provided `Theme` via `color_spantrace::set_theme` globally as another was already set")
-    }
-}
-
-impl std::error::Error for InstallColorSpantraceThemeError {}
-
 /// A representation of a Frame from a Backtrace or a SpanTrace
 #[derive(Debug)]
 #[non_exhaustive]
