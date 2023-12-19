@@ -51,8 +51,8 @@ impl<'a> fmt::Display for StyledFrame<'a> {
         let has_hash_suffix = name.len() > 19
             && &name[name.len() - 19..name.len() - 16] == "::h"
             && name[name.len() - 16..]
-                .chars()
-                .all(|x| x.is_ascii_hexdigit());
+            .chars()
+            .all(|x| x.is_ascii_hexdigit());
 
         let hash_suffix = if has_hash_suffix {
             &name[name.len() - 19..]
@@ -82,7 +82,7 @@ impl<'a> fmt::Display for StyledFrame<'a> {
         let lineno = frame
             .lineno
             .map_or("<unknown line>".to_owned(), |x| x.to_string());
-        write!(&mut separated.ready(), "    at {}:{}", file, lineno,)?;
+        write!(&mut separated.ready(), "    at {}:{}", file, lineno, )?;
 
         let v = if std::thread::panicking() {
             panic_verbosity()
@@ -129,7 +129,7 @@ impl fmt::Display for SourceSection<'_> {
         for (line, cur_line_no) in surrounding_src.zip(start_line..) {
             let line = line.unwrap();
             if cur_line_no == lineno {
-                write!(&mut f, "{:>8} > {}", cur_line_no, line,)?;
+                write!(&mut f, "{:>8} > {}", cur_line_no, line, )?;
             } else {
                 write!(&mut f, "{:>8} │ {}", cur_line_no, line)?;
             }
@@ -365,9 +365,9 @@ impl HookBuilder {
     #[cfg(feature = "issue-url")]
     #[cfg_attr(docsrs, doc(cfg(feature = "issue-url")))]
     pub fn add_issue_metadata<K, V>(mut self, key: K, value: V) -> Self
-    where
-        K: Display,
-        V: Display + Send + Sync + 'static,
+        where
+            K: Display,
+            V: Display + Send + Sync + 'static,
     {
         let pair = (key.to_string(), Box::new(value) as _);
         self.issue_metadata.push(pair);
@@ -401,8 +401,8 @@ impl HookBuilder {
     #[cfg(feature = "issue-url")]
     #[cfg_attr(docsrs, doc(cfg(feature = "issue-url")))]
     pub fn issue_filter<F>(mut self, predicate: F) -> Self
-    where
-        F: Fn(crate::ErrorKind<'_>) -> bool + Send + Sync + 'static,
+        where
+            F: Fn(crate::ErrorKind<'_>) -> bool + Send + Sync + 'static,
     {
         self.issue_filter = Arc::new(predicate);
         self
@@ -481,7 +481,7 @@ impl HookBuilder {
     /// This can be used if you want to combine these handlers with other handlers.
     pub fn try_into_hooks(self) -> Result<(PanicHook, EyreHook), crate::eyre::Report> {
         #[cfg(feature = "issue-url")]
-        let metadata = Arc::new(self.issue_metadata);
+            let metadata = Arc::new(self.issue_metadata);
         let panic_hook = PanicHook {
             filters: self.filters.into(),
             section: self.panic_section,
@@ -729,9 +729,9 @@ pub struct EyreHook {
 
 type HookFunc = Box<
     dyn Fn(&(dyn std::error::Error + 'static)) -> Box<dyn eyre::EyreHandler>
-        + Send
-        + Sync
-        + 'static,
+    + Send
+    + Sync
+    + 'static,
 >;
 
 impl EyreHook {
@@ -780,7 +780,7 @@ pub(crate) struct BacktraceFormatter<'a> {
 
 impl Display for BacktraceFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:━^80}", " BACKTRACE ")?;
+        write!(f, "[BACKTRACE]")?;
 
         // Collect frame info.
         let frames: Vec<_> = self
