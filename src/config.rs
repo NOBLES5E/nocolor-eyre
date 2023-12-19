@@ -307,7 +307,7 @@ impl HookBuilder {
     ///
     /// impl PanicMessage for MyPanicMessage {
     ///     fn display(&self, pi: &std::panic::PanicInfo<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         writeln!(f, "{}", "The application panicked (crashed).".red())?;
+    ///         writeln!(f, "{}", "The application panicked (crashed).")?;
     ///
     ///         // Print panic message.
     ///         let payload = pi
@@ -318,14 +318,14 @@ impl HookBuilder {
     ///             .unwrap_or("<non string panic payload>");
     ///
     ///         write!(f, "Message:  ")?;
-    ///         writeln!(f, "{}", payload.cyan())?;
+    ///         writeln!(f, "{}", payload)?;
     ///
     ///         // If known, print panic location.
     ///         write!(f, "Location: ")?;
     ///         if let Some(loc) = pi.location() {
-    ///             write!(f, "{}", loc.file().purple())?;
+    ///             write!(f, "{}", loc.file()))?;
     ///             write!(f, ":")?;
-    ///             write!(f, "{}", loc.line().purple())?;
+    ///             write!(f, "{}", loc.line()))?;
     ///
     ///             write!(f, "\n\nConsider reporting the bug at {}", custom_url(loc, payload))?;
     ///         } else {
