@@ -20,7 +20,7 @@ pub(crate) mod help;
 /// # Examples
 ///
 /// ```rust
-/// use color_eyre::{eyre::eyre, SectionExt, Section, eyre::Report};
+/// use nocolor_eyre::{eyre::eyre, SectionExt, Section, eyre::Report};
 /// use std::process::Command;
 /// use tracing::instrument;
 ///
@@ -87,7 +87,7 @@ pub trait SectionExt: Sized {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use color_eyre::{eyre::eyre, Section, SectionExt, eyre::Report};
+    /// use nocolor_eyre::{eyre::eyre, Section, SectionExt, eyre::Report};
     ///
     /// let all_in_header = "header\n   body\n   body";
     /// let report = Err::<(), Report>(eyre!("an error occurred"))
@@ -124,7 +124,7 @@ where
 ///
 /// # Details
 ///
-/// `color_eyre` provides two types of help text that can be attached to error reports: custom
+/// `nocolor_eyre` provides two types of help text that can be attached to error reports: custom
 /// sections and pre-configured sections. Custom sections are added via the `section` and
 /// `with_section` methods, and give maximum control over formatting.
 ///
@@ -148,7 +148,7 @@ pub trait Section: crate::private::Sealed {
     /// # Examples
     ///
     /// ```rust,should_panic
-    /// use color_eyre::{eyre::eyre, eyre::Report, Section};
+    /// use nocolor_eyre::{eyre::eyre, eyre::Report, Section};
     ///
     /// Err(eyre!("command failed"))
     ///     .section("Please report bugs to https://real.url/bugs")?;
@@ -164,7 +164,7 @@ pub trait Section: crate::private::Sealed {
     /// # Examples
     ///
     /// ```rust
-    /// use color_eyre::{eyre::eyre, eyre::Report, Section, SectionExt};
+    /// use nocolor_eyre::{eyre::eyre, eyre::Report, Section, SectionExt};
     ///
     /// let output = std::process::Command::new("ls")
     ///     .output()?;
@@ -191,7 +191,7 @@ pub trait Section: crate::private::Sealed {
     /// # Examples
     ///
     /// ```rust,should_panic
-    /// use color_eyre::{eyre::eyre, eyre::Report, Section};
+    /// use nocolor_eyre::{eyre::eyre, eyre::Report, Section};
     /// use thiserror::Error;
     ///
     /// #[derive(Debug, Error)]
@@ -213,7 +213,7 @@ pub trait Section: crate::private::Sealed {
     /// # Examples
     ///
     /// ```rust,should_panic
-    /// use color_eyre::{eyre::eyre, eyre::Report, Section};
+    /// use nocolor_eyre::{eyre::eyre, eyre::Report, Section};
     /// use thiserror::Error;
     ///
     /// #[derive(Debug, Error)]
@@ -236,7 +236,7 @@ pub trait Section: crate::private::Sealed {
     ///
     /// ```rust
     /// # use std::{error::Error, fmt::{self, Display}};
-    /// # use color_eyre::eyre::Result;
+    /// # use nocolor_eyre::eyre::Result;
     /// # #[derive(Debug)]
     /// # struct FakeErr;
     /// # impl Display for FakeErr {
@@ -249,7 +249,7 @@ pub trait Section: crate::private::Sealed {
     /// # fn fallible_fn() -> Result<(), FakeErr> {
     /// #       Ok(())
     /// # }
-    /// use color_eyre::Section as _;
+    /// use nocolor_eyre::Section as _;
     ///
     /// fallible_fn().note("This might have failed due to ...")?;
     /// # Ok(())
@@ -266,7 +266,7 @@ pub trait Section: crate::private::Sealed {
     ///
     /// ```rust
     /// # use std::{error::Error, fmt::{self, Display}};
-    /// # use color_eyre::eyre::Result;
+    /// # use nocolor_eyre::eyre::Result;
     /// # #[derive(Debug)]
     /// # struct FakeErr;
     /// # impl Display for FakeErr {
@@ -279,7 +279,7 @@ pub trait Section: crate::private::Sealed {
     /// # fn fallible_fn() -> Result<(), FakeErr> {
     /// #       Ok(())
     /// # }
-    /// use color_eyre::Section as _;
+    /// use nocolor_eyre::Section as _;
     ///
     /// fallible_fn().with_note(|| {
     ///         format!("This might have failed due to ... It has failed {} times", 100)

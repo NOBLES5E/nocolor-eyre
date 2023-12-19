@@ -561,9 +561,9 @@ fn default_frame_filter(frames: &mut Vec<&Frame>) {
 
 fn eyre_frame_filters(frames: &mut Vec<&Frame>) {
     let filters = &[
-        "<color_eyre::Handler as eyre::EyreHandler>::default",
+        "<nocolor_eyre::Handler as eyre::EyreHandler>::default",
         "eyre::",
-        "color_eyre::",
+        "nocolor_eyre::",
     ];
 
     frames.retain(|frame| {
@@ -583,7 +583,7 @@ struct DefaultPanicMessage;
 
 impl PanicMessage for DefaultPanicMessage {
     fn display(&self, pi: &std::panic::PanicInfo<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // XXX is my assumption correct that this function is guaranteed to only run after `color_eyre` was setup successfully (including setting `THEME`), and that therefore the following line will never panic? Otherwise, we could return `fmt::Error`, but if the above is true, I like `unwrap` + a comment why this never fails better
+        // XXX is my assumption correct that this function is guaranteed to only run after `nocolor_eyre` was setup successfully (including setting `THEME`), and that therefore the following line will never panic? Otherwise, we could return `fmt::Error`, but if the above is true, I like `unwrap` + a comment why this never fails better
         writeln!(f, "{}", "The application panicked (crashed)")?;
 
         // Print panic message.
