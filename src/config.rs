@@ -301,9 +301,9 @@ impl HookBuilder {
     ///         // If known, print panic location.
     ///         write!(f, "Location: ")?;
     ///         if let Some(loc) = pi.location() {
-    ///             write!(f, "{}", loc.file()))?;
+    ///             write!(f, "{}", loc.file())?;
     ///             write!(f, ":")?;
-    ///             write!(f, "{}", loc.line()))?;
+    ///             write!(f, "{}", loc.line())?;
     ///
     ///             write!(f, "\n\nConsider reporting the bug at {}", custom_url(loc, payload))?;
     ///         } else {
