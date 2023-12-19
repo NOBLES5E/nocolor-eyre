@@ -274,7 +274,6 @@ impl Frame {
 /// Builder for customizing the behavior of the global panic and error report hooks
 pub struct HookBuilder {
     filters: Vec<Box<FilterCallback>>,
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "track-caller")]
     display_location_section: bool,
@@ -293,8 +292,7 @@ impl HookBuilder {
     ///
     /// # Details
     ///
-    /// By default this function calls `add_default_filters()` and
-    /// `capture_span_trace_by_default(true)`. To get a `HookBuilder` with all
+    /// By default this function calls `add_default_filters()`. To get a `HookBuilder` with all
     /// features disabled by default call `HookBuilder::blank()`.
     ///
     /// # Example
@@ -307,16 +305,13 @@ impl HookBuilder {
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Self::blank()
-            .add_default_filters()
-            .capture_span_trace_by_default(true)
+        Self::blank().add_default_filters()
     }
 
     /// Construct a HookBuilder with minimal features enabled
     pub fn blank() -> Self {
         HookBuilder {
             filters: vec![],
-            capture_span_trace_by_default: false,
             display_env_section: true,
             #[cfg(feature = "track-caller")]
             display_location_section: true,
@@ -489,12 +484,6 @@ impl HookBuilder {
         self
     }
 
-    /// Configures the default capture mode for `SpanTraces` in error reports and panics
-    pub fn capture_span_trace_by_default(mut self, cond: bool) -> Self {
-        self.capture_span_trace_by_default = cond;
-        self
-    }
-
     /// Configures the enviroment varible info section and whether or not it is displayed
     pub fn display_env_section(mut self, cond: bool) -> Self {
         self.display_env_section = cond;
@@ -572,8 +561,6 @@ impl HookBuilder {
         let panic_hook = PanicHook {
             filters: self.filters.into(),
             section: self.panic_section,
-            #[cfg(feature = "capture-spantrace")]
-            capture_span_trace_by_default: self.capture_span_trace_by_default,
             display_env_section: self.display_env_section,
             panic_message: self
                 .panic_message
@@ -588,8 +575,6 @@ impl HookBuilder {
 
         let eyre_hook = EyreHook {
             filters: panic_hook.filters.clone(),
-            #[cfg(feature = "capture-spantrace")]
-            capture_span_trace_by_default: self.capture_span_trace_by_default,
             display_env_section: self.display_env_section,
             #[cfg(feature = "track-caller")]
             display_location_section: self.display_location_section,
@@ -600,9 +585,6 @@ impl HookBuilder {
             #[cfg(feature = "issue-url")]
             issue_filter: self.issue_filter,
         };
-
-        #[cfg(feature = "capture-spantrace")]
-        eyre::WrapErr::wrap_err(color_spantrace::set_theme(self.theme.into()), "could not set the provided `Theme` via `color_spantrace::set_theme` globally as another was already set")?;
 
         Ok((panic_hook, eyre_hook))
     }
@@ -682,8 +664,6 @@ pub struct PanicReport<'a> {
     hook: &'a PanicHook,
     panic_info: &'a std::panic::PanicInfo<'a>,
     backtrace: Option<backtrace::Backtrace>,
-    #[cfg(feature = "capture-spantrace")]
-    span_trace: Option<tracing_error::SpanTrace>,
 }
 
 fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -698,17 +678,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
         write!(&mut separated.ready(), "{}", section)?;
     }
 
-    #[cfg(feature = "capture-spantrace")]
-    {
-        if let Some(span_trace) = report.span_trace.as_ref() {
-            write!(
-                &mut separated.ready(),
-                "{}",
-                crate::writers::FormattedSpanTrace(span_trace)
-            )?;
-        }
-    }
-
     if let Some(bt) = report.backtrace.as_ref() {
         let fmted_bt = report.hook.format_backtrace(bt);
         write!(
@@ -721,8 +690,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
     if report.hook.display_env_section {
         let env_section = EnvSection {
             bt_captured: &capture_bt,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace: report.span_trace.as_ref(),
         };
 
         write!(&mut separated.ready(), "{}", env_section)?;
@@ -747,9 +714,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
                 .with_location(report.panic_info.location())
                 .with_metadata(&**report.hook.issue_metadata);
 
-            #[cfg(feature = "capture-spantrace")]
-            let issue_section = issue_section.with_span_trace(report.span_trace.as_ref());
-
             write!(&mut separated.ready(), "{}", issue_section)?;
         }
     }
@@ -768,8 +732,6 @@ pub struct PanicHook {
     filters: Arc<[Box<FilterCallback>]>,
     section: Option<Box<dyn Display + Send + Sync + 'static>>,
     panic_message: Box<dyn PanicMessage>,
-    #[cfg(feature = "capture-spantrace")]
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "issue-url")]
     issue_url: Option<String>,
@@ -788,13 +750,6 @@ impl PanicHook {
             filters: &self.filters,
             inner: trace,
         }
-    }
-
-    #[cfg(feature = "capture-spantrace")]
-    fn spantrace_capture_enabled(&self) -> bool {
-        std::env::var("RUST_SPANTRACE")
-            .map(|val| val != "0")
-            .unwrap_or(self.capture_span_trace_by_default)
     }
 
     /// Install self as a global panic hook via `std::panic::set_hook`.
@@ -820,13 +775,6 @@ impl PanicHook {
         let v = panic_verbosity();
         let capture_bt = v != Verbosity::Minimal;
 
-        #[cfg(feature = "capture-spantrace")]
-        let span_trace = if self.spantrace_capture_enabled() {
-            Some(tracing_error::SpanTrace::capture())
-        } else {
-            None
-        };
-
         let backtrace = if capture_bt {
             Some(backtrace::Backtrace::new())
         } else {
@@ -835,8 +783,6 @@ impl PanicHook {
 
         PanicReport {
             panic_info,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace,
             backtrace,
             hook: self,
         }
@@ -846,8 +792,6 @@ impl PanicHook {
 /// An eyre reporting hook used to construct `EyreHandler`s
 pub struct EyreHook {
     filters: Arc<[Box<FilterCallback>]>,
-    #[cfg(feature = "capture-spantrace")]
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "track-caller")]
     display_location_section: bool,
@@ -875,21 +819,10 @@ impl EyreHook {
             None
         };
 
-        #[cfg(feature = "capture-spantrace")]
-        let span_trace = if self.spantrace_capture_enabled()
-            && crate::handler::get_deepest_spantrace(error).is_none()
-        {
-            Some(tracing_error::SpanTrace::capture())
-        } else {
-            None
-        };
-
         crate::Handler {
             filters: self.filters.clone(),
             backtrace,
             suppress_backtrace: false,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace,
             sections: Vec::new(),
             display_env_section: self.display_env_section,
             #[cfg(feature = "track-caller")]
@@ -903,13 +836,6 @@ impl EyreHook {
             #[cfg(feature = "track-caller")]
             location: None,
         }
-    }
-
-    #[cfg(feature = "capture-spantrace")]
-    fn spantrace_capture_enabled(&self) -> bool {
-        std::env::var("RUST_SPANTRACE")
-            .map(|val| val != "0")
-            .unwrap_or(self.capture_span_trace_by_default)
     }
 
     /// Installs self as the global eyre handling hook via `eyre::set_hook`

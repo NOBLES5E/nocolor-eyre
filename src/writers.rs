@@ -149,31 +149,8 @@ where
     }
 }
 
-#[cfg(feature = "capture-spantrace")]
-pub(crate) struct FormattedSpanTrace<'a>(pub(crate) &'a SpanTrace);
-
-#[cfg(feature = "capture-spantrace")]
-impl fmt::Display for FormattedSpanTrace<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use indenter::indented;
-        use indenter::Format;
-
-        if self.0.status() == SpanTraceStatus::CAPTURED {
-            write!(
-                indented(f).with_format(Format::Uniform { indentation: "  " }),
-                "{}",
-                color_spantrace::colorize(self.0)
-            )?;
-        }
-
-        Ok(())
-    }
-}
-
 pub(crate) struct EnvSection<'a> {
     pub(crate) bt_captured: &'a bool,
-    #[cfg(feature = "capture-spantrace")]
-    pub(crate) span_trace: Option<&'a SpanTrace>,
 }
 
 impl fmt::Display for EnvSection<'_> {
@@ -191,32 +168,6 @@ impl fmt::Display for EnvSection<'_> {
             started: false,
         };
         write!(&mut separated.ready(), "{}", SourceSnippets(v))?;
-        #[cfg(feature = "capture-spantrace")]
-        write!(
-            &mut separated.ready(),
-            "{}",
-            SpanTraceOmited(self.span_trace)
-        )?;
-        Ok(())
-    }
-}
-
-#[cfg(feature = "capture-spantrace")]
-struct SpanTraceOmited<'a>(Option<&'a SpanTrace>);
-
-#[cfg(feature = "capture-spantrace")]
-impl fmt::Display for SpanTraceOmited<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(span_trace) = self.0 {
-            if span_trace.status() == SpanTraceStatus::UNSUPPORTED {
-                writeln!(f, "Warning: SpanTrace capture is Unsupported.")?;
-                write!(
-                    f,
-                    "Ensure that you've setup a tracing-error ErrorLayer and the semver versions are compatible"
-                )?;
-            }
-        }
-
         Ok(())
     }
 }

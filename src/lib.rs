@@ -369,8 +369,6 @@ use section::help::HelpInfo;
 #[doc(hidden)]
 pub use section::Section as Help;
 pub use section::{IndentedSection, Section, SectionExt};
-#[cfg(feature = "capture-spantrace")]
-use tracing_error::SpanTrace;
 #[doc(hidden)]
 pub use Handler as Context;
 
@@ -397,8 +395,6 @@ pub struct Handler {
     filters: Arc<[Box<config::FilterCallback>]>,
     backtrace: Option<Backtrace>,
     suppress_backtrace: bool,
-    #[cfg(feature = "capture-spantrace")]
-    span_trace: Option<SpanTrace>,
     sections: Vec<HelpInfo>,
     display_env_section: bool,
     #[cfg(feature = "track-caller")]
