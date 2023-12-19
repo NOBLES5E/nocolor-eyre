@@ -64,8 +64,6 @@ impl<'a> fmt::Display for StyledFrame<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self(frame) = self;
 
-        let is_dependency_code = frame.is_dependency_code();
-
         // Print frame index.
         write!(f, "{:>2}: ", frame.n)?;
 
@@ -91,12 +89,7 @@ impl<'a> fmt::Display for StyledFrame<'a> {
             name
         };
 
-        if is_dependency_code {
-            write!(f, "{}", name)?;
-        } else {
-            write!(f, "{}", name)?;
-        }
-
+        write!(f, "{}", name)?;
         write!(f, "{}", hash_suffix)?;
 
         let mut separated = f.header("\n");
@@ -170,52 +163,6 @@ impl fmt::Display for SourceSection<'_> {
 }
 
 impl Frame {
-    fn is_dependency_code(&self) -> bool {
-        const SYM_PREFIXES: &[&str] = &[
-            "std::",
-            "core::",
-            "backtrace::backtrace::",
-            "_rust_begin_unwind",
-            "color_traceback::",
-            "__rust_",
-            "___rust_",
-            "__pthread",
-            "_main",
-            "main",
-            "__scrt_common_main_seh",
-            "BaseThreadInitThunk",
-            "_start",
-            "__libc_start_main",
-            "start_thread",
-        ];
-
-        // Inspect name.
-        if let Some(ref name) = self.name {
-            if SYM_PREFIXES.iter().any(|x| name.starts_with(x)) {
-                return true;
-            }
-        }
-
-        const FILE_PREFIXES: &[&str] = &[
-            "/rustc/",
-            "src/libstd/",
-            "src/libpanic_unwind/",
-            "src/libtest/",
-        ];
-
-        // Inspect filename.
-        if let Some(ref filename) = self.filename {
-            let filename = filename.to_string_lossy();
-            if FILE_PREFIXES.iter().any(|x| filename.starts_with(x))
-                || filename.contains("/.cargo/registry/src/")
-            {
-                return true;
-            }
-        }
-
-        false
-    }
-
     /// Heuristically determine whether a frame is likely to be a post panic
     /// frame.
     ///
@@ -298,7 +245,7 @@ impl HookBuilder {
     /// # Example
     ///
     /// ```rust
-    /// use color_eyre::config::HookBuilder;
+    /// use nocolor_eyre::config::HookBuilder;
     ///
     /// HookBuilder::new()
     ///     .install()
@@ -332,7 +279,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .panic_section("consider reporting the bug at https://github.com/yaahc/color-eyre")
     ///     .install()
     ///     .unwrap()
@@ -349,12 +296,11 @@ impl HookBuilder {
     ///
     /// ```rust
     /// use std::{panic::Location, fmt};
-    /// use color_eyre::section::PanicMessage;
-    /// use owo_colors::OwoColorize;
+    /// use nocolor_eyre::section::PanicMessage;
     ///
     /// struct MyPanicMessage;
     ///
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .panic_message(MyPanicMessage)
     ///     .install()
     ///     .unwrap();
@@ -413,7 +359,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .install()
     ///     .unwrap();
@@ -432,7 +378,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
     ///     .install()
@@ -457,10 +403,10 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .issue_filter(|kind| match kind {
-    ///         color_eyre::ErrorKind::NonRecoverable(payload) => {
+    ///         nocolor_eyre::ErrorKind::NonRecoverable(payload) => {
     ///             let payload = payload
     ///                 .downcast_ref::<String>()
     ///                 .map(String::as_str)
@@ -469,7 +415,7 @@ impl HookBuilder {
     ///
     ///             !payload.contains("my irrelevant error message")
     ///         },
-    ///         color_eyre::ErrorKind::Recoverable(error) => !error.is::<std::fmt::Error>(),
+    ///         nocolor_eyre::ErrorKind::Recoverable(error) => !error.is::<std::fmt::Error>(),
     ///     })
     ///     .install()
     ///     .unwrap();
@@ -507,7 +453,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .add_frame_filter(Box::new(|frames| {
     ///         let filters = &[
     ///             "uninteresting_function",
@@ -721,7 +667,7 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
     Ok(())
 }
 
-impl fmt::Display for PanicReport<'_> {
+impl Display for PanicReport<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         print_panic_info(self, f)
     }
@@ -839,8 +785,8 @@ impl EyreHook {
     }
 
     /// Installs self as the global eyre handling hook via `eyre::set_hook`
-    pub fn install(self) -> Result<(), crate::eyre::InstallError> {
-        crate::eyre::set_hook(self.into_eyre_hook())
+    pub fn install(self) -> Result<(), eyre::InstallError> {
+        eyre::set_hook(self.into_eyre_hook())
     }
 
     /// Convert the self into the boxed type expected by `eyre::set_hook`.
@@ -854,7 +800,7 @@ pub(crate) struct BacktraceFormatter<'a> {
     pub(crate) inner: &'a backtrace::Backtrace,
 }
 
-impl fmt::Display for BacktraceFormatter<'_> {
+impl Display for BacktraceFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:━^80}", " BACKTRACE ")?;
 
