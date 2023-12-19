@@ -6,7 +6,6 @@ use crate::{
 };
 use fmt::Display;
 use indenter::{indented, Format};
-use owo_colors::{style, OwoColorize, Style};
 use std::env;
 use std::fmt::Write as _;
 use std::{fmt, path::PathBuf, sync::Arc};
@@ -21,160 +20,6 @@ impl fmt::Display for InstallError {
 }
 
 impl std::error::Error for InstallError {}
-
-#[derive(Debug)]
-struct InstallThemeError;
-
-impl fmt::Display for InstallThemeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("could not set the provided `Theme` globally as another was already set")
-    }
-}
-
-impl std::error::Error for InstallThemeError {}
-
-#[derive(Debug)]
-struct InstallColorSpantraceThemeError;
-
-impl fmt::Display for InstallColorSpantraceThemeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("could not set the provided `Theme` via `color_spantrace::set_theme` globally as another was already set")
-    }
-}
-
-impl std::error::Error for InstallColorSpantraceThemeError {}
-
-/// A struct that represents a theme that is used by `color_eyre`
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Theme {
-    pub(crate) file: Style,
-    pub(crate) line_number: Style,
-    pub(crate) spantrace_target: Style,
-    pub(crate) spantrace_fields: Style,
-    pub(crate) active_line: Style,
-    pub(crate) error: Style,
-    pub(crate) help_info_note: Style,
-    pub(crate) help_info_warning: Style,
-    pub(crate) help_info_suggestion: Style,
-    pub(crate) help_info_error: Style,
-    pub(crate) dependency_code: Style,
-    pub(crate) crate_code: Style,
-    pub(crate) code_hash: Style,
-    pub(crate) panic_header: Style,
-    pub(crate) panic_message: Style,
-    pub(crate) panic_file: Style,
-    pub(crate) panic_line_number: Style,
-    pub(crate) hidden_frames: Style,
-}
-
-macro_rules! theme_setters {
-    ($(#[$meta:meta] $name:ident),* $(,)?) => {
-        $(
-            #[$meta]
-            pub fn $name(mut self, style: Style) -> Self {
-                self.$name = style;
-                self
-            }
-        )*
-    };
-}
-
-impl Theme {
-    /// Creates a blank theme
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a theme for dark backgrounds. This is the default
-    pub fn dark() -> Self {
-        Self {
-            file: style().purple(),
-            line_number: style().purple(),
-            active_line: style().white().bold(),
-            error: style().bright_red(),
-            help_info_note: style().bright_cyan(),
-            help_info_warning: style().bright_yellow(),
-            help_info_suggestion: style().bright_cyan(),
-            help_info_error: style().bright_red(),
-            dependency_code: style().green(),
-            crate_code: style().bright_red(),
-            code_hash: style().bright_black(),
-            panic_header: style().red(),
-            panic_message: style().cyan(),
-            panic_file: style().purple(),
-            panic_line_number: style().purple(),
-            hidden_frames: style().bright_cyan(),
-            spantrace_target: style().bright_red(),
-            spantrace_fields: style().bright_cyan(),
-        }
-    }
-
-    // XXX it would be great, if someone with more style optimizes the light theme below. I just fixed the biggest problems, but ideally there would be darker colors (however, the standard ANSI colors don't seem to have many dark enough colors. Maybe xterm colors or RGB colors would be better (however, again, see my comment regarding xterm colors in `color_spantrace`))
-
-    /// Returns a theme for light backgrounds
-    pub fn light() -> Self {
-        Self {
-            file: style().purple(),
-            line_number: style().purple(),
-            spantrace_target: style().red(),
-            spantrace_fields: style().blue(),
-            active_line: style().bold(),
-            error: style().red(),
-            help_info_note: style().blue(),
-            help_info_warning: style().bright_red(),
-            help_info_suggestion: style().blue(),
-            help_info_error: style().red(),
-            dependency_code: style().green(),
-            crate_code: style().red(),
-            code_hash: style().bright_black(),
-            panic_header: style().red(),
-            panic_message: style().blue(),
-            panic_file: style().purple(),
-            panic_line_number: style().purple(),
-            hidden_frames: style().blue(),
-        }
-    }
-
-    theme_setters! {
-        /// Styles printed paths
-        file,
-        /// Styles the line number of a file
-        line_number,
-        /// Styles the `color_spantrace` target (i.e. the module and function name, and so on)
-        spantrace_target,
-        /// Styles fields associated with a the `tracing::Span`.
-        spantrace_fields,
-        /// Styles the selected line of displayed code
-        active_line,
-        // XXX not sure how to describe this better (or if this is even completely correct)
-        /// Styles errors printed by `EyreHandler`
-        error,
-        /// Styles the "note" section header
-        help_info_note,
-        /// Styles the "warning" section header
-        help_info_warning,
-        /// Styles the "suggestion" section header
-        help_info_suggestion,
-        /// Styles the "error" section header
-        help_info_error,
-        /// Styles code that is not part of your crate
-        dependency_code,
-        /// Styles code that's in your crate
-        crate_code,
-        /// Styles the hash after `dependency_code` and `crate_code`
-        code_hash,
-        /// Styles the header of a panic
-        panic_header,
-        /// Styles the message of a panic
-        panic_message,
-        /// Styles paths of a panic
-        panic_file,
-        /// Styles the line numbers of a panic
-        panic_line_number,
-        /// Styles the "N frames hidden" message
-        hidden_frames,
-    }
-}
 
 /// A representation of a Frame from a Backtrace or a SpanTrace
 #[derive(Debug)]
@@ -191,13 +36,11 @@ pub struct Frame {
 }
 
 #[derive(Debug)]
-struct StyledFrame<'a>(&'a Frame, Theme);
+struct StyledFrame<'a>(&'a Frame);
 
 impl<'a> fmt::Display for StyledFrame<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self(frame, theme) = self;
-
-        let is_dependency_code = frame.is_dependency_code();
+        let Self(frame) = self;
 
         // Print frame index.
         write!(f, "{:>2}: ", frame.n)?;
@@ -224,13 +67,8 @@ impl<'a> fmt::Display for StyledFrame<'a> {
             name
         };
 
-        if is_dependency_code {
-            write!(f, "{}", (name).style(theme.dependency_code))?;
-        } else {
-            write!(f, "{}", (name).style(theme.crate_code))?;
-        }
-
-        write!(f, "{}", (hash_suffix).style(theme.code_hash))?;
+        write!(f, "{}", name)?;
+        write!(f, "{}", hash_suffix)?;
 
         let mut separated = f.header("\n");
 
@@ -244,12 +82,7 @@ impl<'a> fmt::Display for StyledFrame<'a> {
         let lineno = frame
             .lineno
             .map_or("<unknown line>".to_owned(), |x| x.to_string());
-        write!(
-            &mut separated.ready(),
-            "    at {}:{}",
-            file.style(theme.file),
-            lineno.style(theme.line_number),
-        )?;
+        write!(&mut separated.ready(), "    at {}:{}", file, lineno,)?;
 
         let v = if std::thread::panicking() {
             panic_verbosity()
@@ -259,18 +92,18 @@ impl<'a> fmt::Display for StyledFrame<'a> {
 
         // Maybe print source.
         if v >= Verbosity::Full {
-            write!(&mut separated.ready(), "{}", SourceSection(frame, *theme))?;
+            write!(&mut separated.ready(), "{}", SourceSection(frame))?;
         }
 
         Ok(())
     }
 }
 
-struct SourceSection<'a>(&'a Frame, Theme);
+struct SourceSection<'a>(&'a Frame);
 
 impl fmt::Display for SourceSection<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self(frame, theme) = self;
+        let Self(frame) = self;
 
         let (lineno, filename) = match (frame.lineno, frame.filename.as_ref()) {
             (Some(a), Some(b)) => (a, b),
@@ -296,13 +129,7 @@ impl fmt::Display for SourceSection<'_> {
         for (line, cur_line_no) in surrounding_src.zip(start_line..) {
             let line = line.unwrap();
             if cur_line_no == lineno {
-                write!(
-                    &mut f,
-                    "{:>8} {} {}",
-                    cur_line_no.style(theme.active_line),
-                    ">".style(theme.active_line),
-                    line.style(theme.active_line),
-                )?;
+                write!(&mut f, "{:>8} > {}", cur_line_no, line,)?;
             } else {
                 write!(&mut f, "{:>8} │ {}", cur_line_no, line)?;
             }
@@ -314,52 +141,6 @@ impl fmt::Display for SourceSection<'_> {
 }
 
 impl Frame {
-    fn is_dependency_code(&self) -> bool {
-        const SYM_PREFIXES: &[&str] = &[
-            "std::",
-            "core::",
-            "backtrace::backtrace::",
-            "_rust_begin_unwind",
-            "color_traceback::",
-            "__rust_",
-            "___rust_",
-            "__pthread",
-            "_main",
-            "main",
-            "__scrt_common_main_seh",
-            "BaseThreadInitThunk",
-            "_start",
-            "__libc_start_main",
-            "start_thread",
-        ];
-
-        // Inspect name.
-        if let Some(ref name) = self.name {
-            if SYM_PREFIXES.iter().any(|x| name.starts_with(x)) {
-                return true;
-            }
-        }
-
-        const FILE_PREFIXES: &[&str] = &[
-            "/rustc/",
-            "src/libstd/",
-            "src/libpanic_unwind/",
-            "src/libtest/",
-        ];
-
-        // Inspect filename.
-        if let Some(ref filename) = self.filename {
-            let filename = filename.to_string_lossy();
-            if FILE_PREFIXES.iter().any(|x| filename.starts_with(x))
-                || filename.contains("/.cargo/registry/src/")
-            {
-                return true;
-            }
-        }
-
-        false
-    }
-
     /// Heuristically determine whether a frame is likely to be a post panic
     /// frame.
     ///
@@ -418,13 +199,11 @@ impl Frame {
 /// Builder for customizing the behavior of the global panic and error report hooks
 pub struct HookBuilder {
     filters: Vec<Box<FilterCallback>>,
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "track-caller")]
     display_location_section: bool,
     panic_section: Option<Box<dyn Display + Send + Sync + 'static>>,
     panic_message: Option<Box<dyn PanicMessage>>,
-    theme: Theme,
     #[cfg(feature = "issue-url")]
     issue_url: Option<String>,
     #[cfg(feature = "issue-url")]
@@ -438,36 +217,31 @@ impl HookBuilder {
     ///
     /// # Details
     ///
-    /// By default this function calls `add_default_filters()` and
-    /// `capture_span_trace_by_default(true)`. To get a `HookBuilder` with all
+    /// By default this function calls `add_default_filters()`. To get a `HookBuilder` with all
     /// features disabled by default call `HookBuilder::blank()`.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use color_eyre::config::HookBuilder;
+    /// use nocolor_eyre::config::HookBuilder;
     ///
     /// HookBuilder::new()
     ///     .install()
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Self::blank()
-            .add_default_filters()
-            .capture_span_trace_by_default(true)
+        Self::blank().add_default_filters()
     }
 
     /// Construct a HookBuilder with minimal features enabled
     pub fn blank() -> Self {
         HookBuilder {
             filters: vec![],
-            capture_span_trace_by_default: false,
             display_env_section: true,
             #[cfg(feature = "track-caller")]
             display_location_section: true,
             panic_section: None,
             panic_message: None,
-            theme: Theme::dark(),
             #[cfg(feature = "issue-url")]
             issue_url: None,
             #[cfg(feature = "issue-url")]
@@ -477,21 +251,13 @@ impl HookBuilder {
         }
     }
 
-    /// Set the global styles that `color_eyre` should use.
-    ///
-    /// **Tip:** You can test new styles by editing `examples/theme.rs` in the `color-eyre` repository.
-    pub fn theme(mut self, theme: Theme) -> Self {
-        self.theme = theme;
-        self
-    }
-
     /// Add a custom section to the panic hook that will be printed
     /// in the panic message.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .panic_section("consider reporting the bug at https://github.com/yaahc/color-eyre")
     ///     .install()
     ///     .unwrap()
@@ -508,19 +274,18 @@ impl HookBuilder {
     ///
     /// ```rust
     /// use std::{panic::Location, fmt};
-    /// use color_eyre::section::PanicMessage;
-    /// use owo_colors::OwoColorize;
+    /// use nocolor_eyre::section::PanicMessage;
     ///
     /// struct MyPanicMessage;
     ///
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .panic_message(MyPanicMessage)
     ///     .install()
     ///     .unwrap();
     ///
     /// impl PanicMessage for MyPanicMessage {
     ///     fn display(&self, pi: &std::panic::PanicInfo<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         writeln!(f, "{}", "The application panicked (crashed).".red())?;
+    ///         writeln!(f, "{}", "The application panicked (crashed).")?;
     ///
     ///         // Print panic message.
     ///         let payload = pi
@@ -531,14 +296,14 @@ impl HookBuilder {
     ///             .unwrap_or("<non string panic payload>");
     ///
     ///         write!(f, "Message:  ")?;
-    ///         writeln!(f, "{}", payload.cyan())?;
+    ///         writeln!(f, "{}", payload)?;
     ///
     ///         // If known, print panic location.
     ///         write!(f, "Location: ")?;
     ///         if let Some(loc) = pi.location() {
-    ///             write!(f, "{}", loc.file().purple())?;
+    ///             write!(f, "{}", loc.file())?;
     ///             write!(f, ":")?;
-    ///             write!(f, "{}", loc.line().purple())?;
+    ///             write!(f, "{}", loc.line())?;
     ///
     ///             write!(f, "\n\nConsider reporting the bug at {}", custom_url(loc, payload))?;
     ///         } else {
@@ -572,7 +337,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .install()
     ///     .unwrap();
@@ -591,7 +356,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
     ///     .install()
@@ -616,10 +381,10 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
     ///     .issue_filter(|kind| match kind {
-    ///         color_eyre::ErrorKind::NonRecoverable(payload) => {
+    ///         nocolor_eyre::ErrorKind::NonRecoverable(payload) => {
     ///             let payload = payload
     ///                 .downcast_ref::<String>()
     ///                 .map(String::as_str)
@@ -628,7 +393,7 @@ impl HookBuilder {
     ///
     ///             !payload.contains("my irrelevant error message")
     ///         },
-    ///         color_eyre::ErrorKind::Recoverable(error) => !error.is::<std::fmt::Error>(),
+    ///         nocolor_eyre::ErrorKind::Recoverable(error) => !error.is::<std::fmt::Error>(),
     ///     })
     ///     .install()
     ///     .unwrap();
@@ -640,12 +405,6 @@ impl HookBuilder {
         F: Fn(crate::ErrorKind<'_>) -> bool + Send + Sync + 'static,
     {
         self.issue_filter = Arc::new(predicate);
-        self
-    }
-
-    /// Configures the default capture mode for `SpanTraces` in error reports and panics
-    pub fn capture_span_trace_by_default(mut self, cond: bool) -> Self {
-        self.capture_span_trace_by_default = cond;
         self
     }
 
@@ -672,7 +431,7 @@ impl HookBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// color_eyre::config::HookBuilder::default()
+    /// nocolor_eyre::config::HookBuilder::default()
     ///     .add_frame_filter(Box::new(|frames| {
     ///         let filters = &[
     ///             "uninteresting_function",
@@ -721,19 +480,15 @@ impl HookBuilder {
     /// Create a `PanicHook` and `EyreHook` from this `HookBuilder`.
     /// This can be used if you want to combine these handlers with other handlers.
     pub fn try_into_hooks(self) -> Result<(PanicHook, EyreHook), crate::eyre::Report> {
-        let theme = self.theme;
         #[cfg(feature = "issue-url")]
         let metadata = Arc::new(self.issue_metadata);
         let panic_hook = PanicHook {
             filters: self.filters.into(),
             section: self.panic_section,
-            #[cfg(feature = "capture-spantrace")]
-            capture_span_trace_by_default: self.capture_span_trace_by_default,
             display_env_section: self.display_env_section,
             panic_message: self
                 .panic_message
-                .unwrap_or_else(|| Box::new(DefaultPanicMessage(theme))),
-            theme,
+                .unwrap_or_else(|| Box::new(DefaultPanicMessage)),
             #[cfg(feature = "issue-url")]
             issue_url: self.issue_url.clone(),
             #[cfg(feature = "issue-url")]
@@ -744,12 +499,9 @@ impl HookBuilder {
 
         let eyre_hook = EyreHook {
             filters: panic_hook.filters.clone(),
-            #[cfg(feature = "capture-spantrace")]
-            capture_span_trace_by_default: self.capture_span_trace_by_default,
             display_env_section: self.display_env_section,
             #[cfg(feature = "track-caller")]
             display_location_section: self.display_location_section,
-            theme,
             #[cfg(feature = "issue-url")]
             issue_url: self.issue_url,
             #[cfg(feature = "issue-url")]
@@ -758,22 +510,7 @@ impl HookBuilder {
             issue_filter: self.issue_filter,
         };
 
-        #[cfg(feature = "capture-spantrace")]
-        eyre::WrapErr::wrap_err(color_spantrace::set_theme(self.theme.into()), "could not set the provided `Theme` via `color_spantrace::set_theme` globally as another was already set")?;
-
         Ok((panic_hook, eyre_hook))
-    }
-}
-
-#[cfg(feature = "capture-spantrace")]
-impl From<Theme> for color_spantrace::Theme {
-    fn from(src: Theme) -> color_spantrace::Theme {
-        color_spantrace::Theme::new()
-            .file(src.file)
-            .line_number(src.line_number)
-            .target(src.spantrace_target)
-            .fields(src.spantrace_fields)
-            .active_line(src.active_line)
     }
 }
 
@@ -802,9 +539,9 @@ fn default_frame_filter(frames: &mut Vec<&Frame>) {
 
 fn eyre_frame_filters(frames: &mut Vec<&Frame>) {
     let filters = &[
-        "<color_eyre::Handler as eyre::EyreHandler>::default",
+        "<nocolor_eyre::Handler as eyre::EyreHandler>::default",
         "eyre::",
-        "color_eyre::",
+        "nocolor_eyre::",
     ];
 
     frames.retain(|frame| {
@@ -820,18 +557,12 @@ fn eyre_frame_filters(frames: &mut Vec<&Frame>) {
     });
 }
 
-struct DefaultPanicMessage(Theme);
+struct DefaultPanicMessage;
 
 impl PanicMessage for DefaultPanicMessage {
     fn display(&self, pi: &std::panic::PanicInfo<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // XXX is my assumption correct that this function is guaranteed to only run after `color_eyre` was setup successfully (including setting `THEME`), and that therefore the following line will never panic? Otherwise, we could return `fmt::Error`, but if the above is true, I like `unwrap` + a comment why this never fails better
-        let theme = &self.0;
-
-        writeln!(
-            f,
-            "{}",
-            "The application panicked (crashed).".style(theme.panic_header)
-        )?;
+        // XXX is my assumption correct that this function is guaranteed to only run after `nocolor_eyre` was setup successfully (including setting `THEME`), and that therefore the following line will never panic? Otherwise, we could return `fmt::Error`, but if the above is true, I like `unwrap` + a comment why this never fails better
+        writeln!(f, "The application panicked (crashed)")?;
 
         // Print panic message.
         let payload = pi
@@ -842,11 +573,11 @@ impl PanicMessage for DefaultPanicMessage {
             .unwrap_or("<non string panic payload>");
 
         write!(f, "Message:  ")?;
-        writeln!(f, "{}", payload.style(theme.panic_message))?;
+        writeln!(f, "{}", payload)?;
 
         // If known, print panic location.
         write!(f, "Location: ")?;
-        write!(f, "{}", crate::fmt::LocationSection(pi.location(), *theme))?;
+        write!(f, "{}", crate::fmt::LocationSection(pi.location()))?;
 
         Ok(())
     }
@@ -857,8 +588,6 @@ pub struct PanicReport<'a> {
     hook: &'a PanicHook,
     panic_info: &'a std::panic::PanicInfo<'a>,
     backtrace: Option<backtrace::Backtrace>,
-    #[cfg(feature = "capture-spantrace")]
-    span_trace: Option<tracing_error::SpanTrace>,
 }
 
 fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -873,17 +602,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
         write!(&mut separated.ready(), "{}", section)?;
     }
 
-    #[cfg(feature = "capture-spantrace")]
-    {
-        if let Some(span_trace) = report.span_trace.as_ref() {
-            write!(
-                &mut separated.ready(),
-                "{}",
-                crate::writers::FormattedSpanTrace(span_trace)
-            )?;
-        }
-    }
-
     if let Some(bt) = report.backtrace.as_ref() {
         let fmted_bt = report.hook.format_backtrace(bt);
         write!(
@@ -896,8 +614,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
     if report.hook.display_env_section {
         let env_section = EnvSection {
             bt_captured: &capture_bt,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace: report.span_trace.as_ref(),
         };
 
         write!(&mut separated.ready(), "{}", env_section)?;
@@ -922,9 +638,6 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
                 .with_location(report.panic_info.location())
                 .with_metadata(&**report.hook.issue_metadata);
 
-            #[cfg(feature = "capture-spantrace")]
-            let issue_section = issue_section.with_span_trace(report.span_trace.as_ref());
-
             write!(&mut separated.ready(), "{}", issue_section)?;
         }
     }
@@ -932,7 +645,7 @@ fn print_panic_info(report: &PanicReport<'_>, f: &mut fmt::Formatter<'_>) -> fmt
     Ok(())
 }
 
-impl fmt::Display for PanicReport<'_> {
+impl Display for PanicReport<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         print_panic_info(self, f)
     }
@@ -943,9 +656,6 @@ pub struct PanicHook {
     filters: Arc<[Box<FilterCallback>]>,
     section: Option<Box<dyn Display + Send + Sync + 'static>>,
     panic_message: Box<dyn PanicMessage>,
-    theme: Theme,
-    #[cfg(feature = "capture-spantrace")]
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "issue-url")]
     issue_url: Option<String>,
@@ -963,15 +673,7 @@ impl PanicHook {
         BacktraceFormatter {
             filters: &self.filters,
             inner: trace,
-            theme: self.theme,
         }
-    }
-
-    #[cfg(feature = "capture-spantrace")]
-    fn spantrace_capture_enabled(&self) -> bool {
-        std::env::var("RUST_SPANTRACE")
-            .map(|val| val != "0")
-            .unwrap_or(self.capture_span_trace_by_default)
     }
 
     /// Install self as a global panic hook via `std::panic::set_hook`.
@@ -997,13 +699,6 @@ impl PanicHook {
         let v = panic_verbosity();
         let capture_bt = v != Verbosity::Minimal;
 
-        #[cfg(feature = "capture-spantrace")]
-        let span_trace = if self.spantrace_capture_enabled() {
-            Some(tracing_error::SpanTrace::capture())
-        } else {
-            None
-        };
-
         let backtrace = if capture_bt {
             Some(backtrace::Backtrace::new())
         } else {
@@ -1012,8 +707,6 @@ impl PanicHook {
 
         PanicReport {
             panic_info,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace,
             backtrace,
             hook: self,
         }
@@ -1023,12 +716,9 @@ impl PanicHook {
 /// An eyre reporting hook used to construct `EyreHandler`s
 pub struct EyreHook {
     filters: Arc<[Box<FilterCallback>]>,
-    #[cfg(feature = "capture-spantrace")]
-    capture_span_trace_by_default: bool,
     display_env_section: bool,
     #[cfg(feature = "track-caller")]
     display_location_section: bool,
-    theme: Theme,
     #[cfg(feature = "issue-url")]
     issue_url: Option<String>,
     #[cfg(feature = "issue-url")]
@@ -1053,21 +743,10 @@ impl EyreHook {
             None
         };
 
-        #[cfg(feature = "capture-spantrace")]
-        let span_trace = if self.spantrace_capture_enabled()
-            && crate::handler::get_deepest_spantrace(error).is_none()
-        {
-            Some(tracing_error::SpanTrace::capture())
-        } else {
-            None
-        };
-
         crate::Handler {
             filters: self.filters.clone(),
             backtrace,
             suppress_backtrace: false,
-            #[cfg(feature = "capture-spantrace")]
-            span_trace,
             sections: Vec::new(),
             display_env_section: self.display_env_section,
             #[cfg(feature = "track-caller")]
@@ -1078,22 +757,14 @@ impl EyreHook {
             issue_metadata: self.issue_metadata.clone(),
             #[cfg(feature = "issue-url")]
             issue_filter: self.issue_filter.clone(),
-            theme: self.theme,
             #[cfg(feature = "track-caller")]
             location: None,
         }
     }
 
-    #[cfg(feature = "capture-spantrace")]
-    fn spantrace_capture_enabled(&self) -> bool {
-        std::env::var("RUST_SPANTRACE")
-            .map(|val| val != "0")
-            .unwrap_or(self.capture_span_trace_by_default)
-    }
-
     /// Installs self as the global eyre handling hook via `eyre::set_hook`
-    pub fn install(self) -> Result<(), crate::eyre::InstallError> {
-        crate::eyre::set_hook(self.into_eyre_hook())
+    pub fn install(self) -> Result<(), eyre::InstallError> {
+        eyre::set_hook(self.into_eyre_hook())
     }
 
     /// Convert the self into the boxed type expected by `eyre::set_hook`.
@@ -1105,10 +776,9 @@ impl EyreHook {
 pub(crate) struct BacktraceFormatter<'a> {
     pub(crate) filters: &'a [Box<FilterCallback>],
     pub(crate) inner: &'a backtrace::Backtrace,
-    pub(crate) theme: Theme,
 }
 
-impl fmt::Display for BacktraceFormatter<'_> {
+impl Display for BacktraceFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:━^80}", " BACKTRACE ")?;
 
@@ -1161,11 +831,7 @@ impl fmt::Display for BacktraceFormatter<'_> {
                     decorator = "⋮",
                 )
                 .expect("writing to strings doesn't panic");
-                write!(
-                    &mut separated.ready(),
-                    "{:^80}",
-                    buf.style(self.theme.hidden_frames)
-                )?;
+                write!(&mut separated.ready(), "{:^80}", buf)?;
             };
         }
 
@@ -1175,7 +841,7 @@ impl fmt::Display for BacktraceFormatter<'_> {
             if frame_delta != 0 {
                 print_hidden!(frame_delta);
             }
-            write!(&mut separated.ready(), "{}", StyledFrame(frame, self.theme))?;
+            write!(&mut separated.ready(), "{}", StyledFrame(frame))?;
             last_n = frame.n;
         }
 

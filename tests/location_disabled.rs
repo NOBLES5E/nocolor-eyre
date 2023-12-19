@@ -1,10 +1,10 @@
 #[cfg(feature = "track-caller")]
 #[test]
 fn disabled() {
-    use color_eyre::eyre;
     use eyre::eyre;
+    use nocolor_eyre::eyre;
 
-    color_eyre::config::HookBuilder::default()
+    nocolor_eyre::config::HookBuilder::default()
         .display_location_section(false)
         .install()
         .unwrap();

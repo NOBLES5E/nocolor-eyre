@@ -1,11 +1,9 @@
 //! Provides an extension trait for attaching `Section` to error reports.
 use crate::{
-    config::Theme,
     eyre::{Report, Result},
     Section,
 };
 use indenter::indented;
-use owo_colors::OwoColorize;
 use std::fmt::Write;
 use std::fmt::{self, Display};
 
@@ -17,9 +15,7 @@ impl Section for Report {
         D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Note(Box::new(note), handler.theme));
+            handler.sections.push(HelpInfo::Note(Box::new(note)));
         }
 
         self
@@ -31,9 +27,7 @@ impl Section for Report {
         F: FnOnce() -> D,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Note(Box::new(note()), handler.theme));
+            handler.sections.push(HelpInfo::Note(Box::new(note())));
         }
 
         self
@@ -44,9 +38,7 @@ impl Section for Report {
         D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Warning(Box::new(warning), handler.theme));
+            handler.sections.push(HelpInfo::Warning(Box::new(warning)));
         }
 
         self
@@ -60,7 +52,7 @@ impl Section for Report {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
                 .sections
-                .push(HelpInfo::Warning(Box::new(warning()), handler.theme));
+                .push(HelpInfo::Warning(Box::new(warning())));
         }
 
         self
@@ -73,7 +65,7 @@ impl Section for Report {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
                 .sections
-                .push(HelpInfo::Suggestion(Box::new(suggestion), handler.theme));
+                .push(HelpInfo::Suggestion(Box::new(suggestion)));
         }
 
         self
@@ -87,7 +79,7 @@ impl Section for Report {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
                 .sections
-                .push(HelpInfo::Suggestion(Box::new(suggestion()), handler.theme));
+                .push(HelpInfo::Suggestion(Box::new(suggestion())));
         }
 
         self
@@ -124,7 +116,7 @@ impl Section for Report {
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let error = error.into();
-            handler.sections.push(HelpInfo::Error(error, handler.theme));
+            handler.sections.push(HelpInfo::Error(error));
         }
 
         self
@@ -137,7 +129,7 @@ impl Section for Report {
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let error = error().into();
-            handler.sections.push(HelpInfo::Error(error, handler.theme));
+            handler.sections.push(HelpInfo::Error(error));
         }
 
         self
@@ -250,33 +242,23 @@ where
 }
 
 pub(crate) enum HelpInfo {
-    Error(Box<dyn std::error::Error + Send + Sync + 'static>, Theme),
+    Error(Box<dyn std::error::Error + Send + Sync + 'static>),
     Custom(Box<dyn Display + Send + Sync + 'static>),
-    Note(Box<dyn Display + Send + Sync + 'static>, Theme),
-    Warning(Box<dyn Display + Send + Sync + 'static>, Theme),
-    Suggestion(Box<dyn Display + Send + Sync + 'static>, Theme),
+    Note(Box<dyn Display + Send + Sync + 'static>),
+    Warning(Box<dyn Display + Send + Sync + 'static>),
+    Suggestion(Box<dyn Display + Send + Sync + 'static>),
 }
 
 impl Display for HelpInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            HelpInfo::Note(note, theme) => {
-                write!(f, "{}: {}", "Note".style(theme.help_info_note), note)
+            HelpInfo::Note(note) => {
+                write!(f, "Note: {}", note)
             }
-            HelpInfo::Warning(warning, theme) => write!(
-                f,
-                "{}: {}",
-                "Warning".style(theme.help_info_warning),
-                warning
-            ),
-            HelpInfo::Suggestion(suggestion, theme) => write!(
-                f,
-                "{}: {}",
-                "Suggestion".style(theme.help_info_suggestion),
-                suggestion
-            ),
+            HelpInfo::Warning(warning) => write!(f, "Warning: {}", warning),
+            HelpInfo::Suggestion(suggestion) => write!(f, "Suggestion: {}", suggestion),
             HelpInfo::Custom(section) => write!(f, "{}", section),
-            HelpInfo::Error(error, theme) => {
+            HelpInfo::Error(error) => {
                 // a lot here
                 let errors = std::iter::successors(
                     Some(error.as_ref() as &(dyn std::error::Error + 'static)),
@@ -286,7 +268,7 @@ impl Display for HelpInfo {
                 write!(f, "Error:")?;
                 for (n, error) in errors.enumerate() {
                     writeln!(f)?;
-                    write!(indented(f).ind(n), "{}", error.style(theme.help_info_error))?;
+                    write!(indented(f).ind(n), "{}", error)?;
                 }
 
                 Ok(())

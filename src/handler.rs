@@ -7,8 +7,6 @@ use crate::{
 use backtrace::Backtrace;
 use indenter::{indented, Format};
 use std::fmt::Write;
-#[cfg(feature = "capture-spantrace")]
-use tracing_error::{ExtractSpanTrace, SpanTrace};
 
 impl std::fmt::Debug for Handler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -22,13 +20,6 @@ impl Handler {
         self.backtrace.as_ref()
     }
 
-    /// Return a reference to the captured `SpanTrace` type
-    #[cfg(feature = "capture-spantrace")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "capture-spantrace")))]
-    pub fn span_trace(&self) -> Option<&SpanTrace> {
-        self.span_trace.as_ref()
-    }
-
     pub(crate) fn format_backtrace<'a>(
         &'a self,
         trace: &'a backtrace::Backtrace,
@@ -36,7 +27,6 @@ impl Handler {
         BacktraceFormatter {
             filters: &self.filters,
             inner: trace,
-            theme: self.theme,
         }
     }
 }
@@ -51,19 +41,11 @@ impl eyre::EyreHandler for Handler {
             return core::fmt::Debug::fmt(error, f);
         }
 
-        #[cfg(feature = "capture-spantrace")]
-        let errors = || {
-            eyre::Chain::new(error)
-                .filter(|e| e.span_trace().is_none())
-                .enumerate()
-        };
-
-        #[cfg(not(feature = "capture-spantrace"))]
         let errors = || eyre::Chain::new(error).enumerate();
 
         for (n, error) in errors() {
             writeln!(f)?;
-            write!(indented(f).ind(n), "{}", self.theme.error.style(error))?;
+            write!(indented(f).ind(n), "{}", error)?;
         }
 
         let mut separated = f.header("\n\n");
@@ -73,17 +55,14 @@ impl eyre::EyreHandler for Handler {
             write!(
                 separated.ready(),
                 "{}",
-                crate::SectionExt::header(
-                    crate::fmt::LocationSection(self.location, self.theme),
-                    "Location:"
-                )
+                crate::SectionExt::header(crate::fmt::LocationSection(self.location), "Location:")
             )?;
         }
 
         for section in self
             .sections
             .iter()
-            .filter(|s| matches!(s, HelpInfo::Error(_, _)))
+            .filter(|s| matches!(s, HelpInfo::Error(_)))
         {
             write!(separated.ready(), "{}", section)?;
         }
@@ -94,23 +73,6 @@ impl eyre::EyreHandler for Handler {
             .filter(|s| matches!(s, HelpInfo::Custom(_)))
         {
             write!(separated.ready(), "{}", section)?;
-        }
-
-        #[cfg(feature = "capture-spantrace")]
-        let span_trace = self
-            .span_trace
-            .as_ref()
-            .or_else(|| get_deepest_spantrace(error));
-
-        #[cfg(feature = "capture-spantrace")]
-        {
-            if let Some(span_trace) = span_trace {
-                write!(
-                    &mut separated.ready(),
-                    "{}",
-                    crate::writers::FormattedSpanTrace(span_trace)
-                )?;
-            }
         }
 
         if !self.suppress_backtrace {
@@ -133,7 +95,7 @@ impl eyre::EyreHandler for Handler {
         for section in self
             .sections
             .iter()
-            .filter(|s| !matches!(s, HelpInfo::Custom(_) | HelpInfo::Error(_, _)))
+            .filter(|s| !matches!(s, HelpInfo::Custom(_) | HelpInfo::Error(_)))
         {
             write!(&mut f, "{}", section)?;
             f = h.ready();
@@ -142,8 +104,6 @@ impl eyre::EyreHandler for Handler {
         if self.display_env_section {
             let env_section = EnvSection {
                 bt_captured: &self.backtrace.is_some(),
-                #[cfg(feature = "capture-spantrace")]
-                span_trace,
             };
 
             write!(&mut separated.ready(), "{}", env_section)?;
@@ -162,9 +122,6 @@ impl eyre::EyreHandler for Handler {
                 .with_backtrace(self.backtrace.as_ref())
                 .with_metadata(&**self.issue_metadata);
 
-            #[cfg(feature = "capture-spantrace")]
-            let issue_section = issue_section.with_span_trace(span_trace);
-
             write!(&mut separated.ready(), "{}", issue_section)?;
         }
 
@@ -175,14 +132,4 @@ impl eyre::EyreHandler for Handler {
     fn track_caller(&mut self, location: &'static std::panic::Location<'static>) {
         self.location = Some(location);
     }
-}
-
-#[cfg(feature = "capture-spantrace")]
-pub(crate) fn get_deepest_spantrace<'a>(
-    error: &'a (dyn std::error::Error + 'static),
-) -> Option<&'a SpanTrace> {
-    eyre::Chain::new(error)
-        .rev()
-        .flat_map(|error| error.span_trace())
-        .next()
 }
