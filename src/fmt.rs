@@ -1,9 +1,7 @@
 //! Module for new types that isolate complext formatting
 use std::fmt;
 
-pub(crate) struct LocationSection<'a>(
-    pub(crate) Option<&'a std::panic::Location<'a>>,
-);
+pub(crate) struct LocationSection<'a>(pub(crate) Option<&'a std::panic::Location<'a>>);
 
 impl fmt::Display for LocationSection<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -11,49 +11,43 @@ impl Section for Report {
     type Return = Report;
 
     fn note<D>(mut self, note: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Note(Box::new(note)));
+            handler.sections.push(HelpInfo::Note(Box::new(note)));
         }
 
         self
     }
 
     fn with_note<D, F>(mut self, note: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Note(Box::new(note())));
+            handler.sections.push(HelpInfo::Note(Box::new(note())));
         }
 
         self
     }
 
     fn warning<D>(mut self, warning: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
-            handler
-                .sections
-                .push(HelpInfo::Warning(Box::new(warning)));
+            handler.sections.push(HelpInfo::Warning(Box::new(warning)));
         }
 
         self
     }
 
     fn with_warning<D, F>(mut self, warning: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
@@ -65,8 +59,8 @@ impl Section for Report {
     }
 
     fn suggestion<D>(mut self, suggestion: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
@@ -78,9 +72,9 @@ impl Section for Report {
     }
 
     fn with_suggestion<D, F>(mut self, suggestion: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             handler
@@ -92,9 +86,9 @@ impl Section for Report {
     }
 
     fn with_section<D, F>(mut self, section: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let section = Box::new(section());
@@ -105,8 +99,8 @@ impl Section for Report {
     }
 
     fn section<D>(mut self, section: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let section = Box::new(section);
@@ -117,8 +111,8 @@ impl Section for Report {
     }
 
     fn error<E2>(mut self, error: E2) -> Self::Return
-        where
-            E2: std::error::Error + Send + Sync + 'static,
+    where
+        E2: std::error::Error + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let error = error.into();
@@ -129,9 +123,9 @@ impl Section for Report {
     }
 
     fn with_error<E2, F>(mut self, error: F) -> Self::Return
-        where
-            F: FnOnce() -> E2,
-            E2: std::error::Error + Send + Sync + 'static,
+    where
+        F: FnOnce() -> E2,
+        E2: std::error::Error + Send + Sync + 'static,
     {
         if let Some(handler) = self.handler_mut().downcast_mut::<crate::Handler>() {
             let error = error().into();
@@ -151,91 +145,91 @@ impl Section for Report {
 }
 
 impl<T, E> Section for Result<T, E>
-    where
-        E: Into<Report>,
+where
+    E: Into<Report>,
 {
     type Return = Result<T, Report>;
 
     fn note<D>(self, note: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.note(note))
     }
 
     fn with_note<D, F>(self, note: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.note(note()))
     }
 
     fn warning<D>(self, warning: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.warning(warning))
     }
 
     fn with_warning<D, F>(self, warning: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.warning(warning()))
     }
 
     fn suggestion<D>(self, suggestion: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.suggestion(suggestion))
     }
 
     fn with_suggestion<D, F>(self, suggestion: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.suggestion(suggestion()))
     }
 
     fn with_section<D, F>(self, section: F) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
-            F: FnOnce() -> D,
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.section(section()))
     }
 
     fn section<D>(self, section: D) -> Self::Return
-        where
-            D: Display + Send + Sync + 'static,
+    where
+        D: Display + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.section(section))
     }
 
     fn error<E2>(self, error: E2) -> Self::Return
-        where
-            E2: std::error::Error + Send + Sync + 'static,
+    where
+        E2: std::error::Error + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.error(error))
     }
 
     fn with_error<E2, F>(self, error: F) -> Self::Return
-        where
-            F: FnOnce() -> E2,
-            E2: std::error::Error + Send + Sync + 'static,
+    where
+        F: FnOnce() -> E2,
+        E2: std::error::Error + Send + Sync + 'static,
     {
         self.map_err(|error| error.into())
             .map_err(|report| report.error(error()))
@@ -261,18 +255,8 @@ impl Display for HelpInfo {
             HelpInfo::Note(note) => {
                 write!(f, "{}: {}", "Note", note)
             }
-            HelpInfo::Warning(warning) => write!(
-                f,
-                "{}: {}",
-                "Warning",
-                warning
-            ),
-            HelpInfo::Suggestion(suggestion) => write!(
-                f,
-                "{}: {}",
-                "Suggestion",
-                suggestion
-            ),
+            HelpInfo::Warning(warning) => write!(f, "{}: {}", "Warning", warning),
+            HelpInfo::Suggestion(suggestion) => write!(f, "{}: {}", "Suggestion", suggestion),
             HelpInfo::Custom(section) => write!(f, "{}", section),
             HelpInfo::Error(error) => {
                 // a lot here

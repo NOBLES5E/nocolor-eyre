@@ -55,10 +55,7 @@ impl eyre::EyreHandler for Handler {
             write!(
                 separated.ready(),
                 "{}",
-                crate::SectionExt::header(
-                    crate::fmt::LocationSection(self.location),
-                    "Location:"
-                )
+                crate::SectionExt::header(crate::fmt::LocationSection(self.location), "Location:")
             )?;
         }
 
