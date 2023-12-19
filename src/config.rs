@@ -129,7 +129,7 @@ impl fmt::Display for SourceSection<'_> {
         for (line, cur_line_no) in surrounding_src.zip(start_line..) {
             let line = line.unwrap();
             if cur_line_no == lineno {
-                write!(&mut f, "{:>8} {} {}", cur_line_no, ">", line,)?;
+                write!(&mut f, "{:>8} > {}", cur_line_no, line,)?;
             } else {
                 write!(&mut f, "{:>8} │ {}", cur_line_no, line)?;
             }
@@ -562,7 +562,7 @@ struct DefaultPanicMessage;
 impl PanicMessage for DefaultPanicMessage {
     fn display(&self, pi: &std::panic::PanicInfo<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // XXX is my assumption correct that this function is guaranteed to only run after `nocolor_eyre` was setup successfully (including setting `THEME`), and that therefore the following line will never panic? Otherwise, we could return `fmt::Error`, but if the above is true, I like `unwrap` + a comment why this never fails better
-        writeln!(f, "{}", "The application panicked (crashed)")?;
+        writeln!(f, "The application panicked (crashed)")?;
 
         // Print panic message.
         let payload = pi

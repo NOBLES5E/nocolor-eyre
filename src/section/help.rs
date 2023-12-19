@@ -253,10 +253,10 @@ impl Display for HelpInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             HelpInfo::Note(note) => {
-                write!(f, "{}: {}", "Note", note)
+                write!(f, "Note: {}", note)
             }
-            HelpInfo::Warning(warning) => write!(f, "{}: {}", "Warning", warning),
-            HelpInfo::Suggestion(suggestion) => write!(f, "{}: {}", "Suggestion", suggestion),
+            HelpInfo::Warning(warning) => write!(f, "Warning: {}", warning),
+            HelpInfo::Suggestion(suggestion) => write!(f, "Suggestion: {}", suggestion),
             HelpInfo::Custom(section) => write!(f, "{}", section),
             HelpInfo::Error(error) => {
                 // a lot here
